@@ -21,20 +21,12 @@ export default function(models = {}) {
         if(!model) {
             throw new Error('missing model ' + self)
         }
-        let fauxResponse = {
-            body: body
-        }
         //this is the contract ohmit requires to traverse an api
         let resource = {
-            response: fauxResponse
-            , self: self
+            self: self
             , get: function(args) {
                 gets[self] = (gets[self] || 0) + 1
                 Object.assign(this,model.response.body)
-                let result = {
-                    response: model.response
-                    , resource: this
-                }
                 return Promise.resolve(this)
             }
             , links: function(rel) {
