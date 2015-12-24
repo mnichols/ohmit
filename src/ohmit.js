@@ -201,27 +201,11 @@ function requests(cfg) {
             function isResource(obj) {
                 return (obj.self && obj.get && obj.follow)
             }
-
-            function parseRequest(request) {
-                if(isResource(request)) {
-                    return request
+            function toArray(arg) {
+                if(Array.isArray(arg)) {
+                    return arg
                 }
-                const response = request.response;
-                const body = response && response.body
-
-                return resourceFactory.createResource({
-                        self: body._links.self.href
-                        ,body: body
-                    })
-            }
-            function parse(requests) {
-                requests = [].concat(requests)
-                return Promise.resolve(requests)
-                .map(parseRequest.bind(this))
-            }
-
-            function flatten(results) {
-                return [].concat.apply([],results)
+                return [arg]
             }
 
            /**
@@ -241,9 +225,7 @@ function requests(cfg) {
                             return it.get({ params: rel.params })
                         }.bind(this))
                     })
-                    .then(res=>{
-                        return [].concat(res)
-                    })
+                    .then(toArray)
             }
             /**
              * walk the rels from `index` and update cache with results
@@ -331,9 +313,7 @@ function requests(cfg) {
                         const params = (rootNode.params || {});
                         return res.get({ params: params})
                     })
-                    .then(res => {
-                        return [].concat(res)
-                    })
+                    .then(toArray)
                 }
             })
         })
