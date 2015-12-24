@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width" charset="utf-8">
+    <title>ohmit</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/cayman.min.css">
+    <link rel="stylesheet" href="css/prism.min.css">
+    <link rel="stylesheet" href="css/index.min.css">
+    <link rel="stylesheet" href="css/docs.min.css">
+    <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
+  </head>
+  <body data-spy="scroll" data-target=".scrollspy">
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container"><a class="brand">Mr. Doc</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav pull-right sponsored"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <header id="overview" class="jumbotron subhead">
+      <div class="container">
+        <h1>ohmit</h1>
+        <p class="lead"></p>
+      </div>
+    </header>
+    <div class="container">
+      <div class="row">
+        <div class="span3 bs-docs-sidebar">
+          <ul class="nav nav-list bs-docs-sidenav affix-top">
+            <li><a href="index.html">Main</a></li>
+            <li class="active"><a href="ohmit.js.html">ohmit.js</a></li>
+          </ul>
+          <div class="scrollspy">
+            <ul class="nav nav-list bs-docs-sidenav affix-top">
+              <li><a href="#pathMap"><i class="alert alert-success"></i><span>pathMap</span></a>
+              </li>
+              <li><a href="#requests"><i class="alert alert-info"></i><span>requests</span></a>
+              </li>
+              <li><a href="#executeRel"><i class="alert alert-info"></i><span>executeRel</span></a>
+              </li>
+              <li><a href="#executeRels"><i class="alert alert-info"></i><span>executeRels</span></a>
+              </li>
+              <li><a href="#startAt"><i class="alert alert-info"></i><span>startAt</span></a>
+              </li>
+              <li><a href="#chainResponse"><i class="alert alert-info"></i><span>chainResponse</span></a>
+              </li>
+              <li><a href="#execute"><i class="alert alert-info"></i><span>execute</span></a>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="span9">
+          <section id="pathMap">
+            <h1>pathMap</h1>
+            <h5 class="subheader"></h5>
+            <p>
+              <div class="label label-success radius ctx-type">declaration</div><span>&nbsp;</span><span>pathMap</span><span>&nbsp;</span>
+            </p>
+          </section>
+          <div class="description"><p>Pre-calculate paths and relationships for requests later on.<br />Maps parameterized full paths to objects having:</p><ul>
+<li><code>keys</code> : {Array} of spec keys that would compile to this path</li>
+<li><code>length</code> : {Number} of rels comprising the path<br /><code>rels</code> : {Array} of objects providing data for making requests including:<pre><code>- `rel` : {String} relationship to follow
+- `params` : {Object} of params to include in request
+- `cacheKey` : {String} of parameterized path
+</code></pre></li>
+</ul>
+</div>
+          <pre><code class="language-javascript">const pathMap = keys.reduce(function(map, key, index) {
+    //special handling for _root key
+    //always inserting a '/' path into the map
+    if(key === ROOT_KEY) {
+        mapPath2Key('/', key)
+        map['/'] = {
+            path: '/'
+            , length: 0
+            , rels: []
+            , keys: [key]
+        }
+        return map
+    }
+    const value = this.spec[key];
+    let fullpath = (isString(value) ? value : value._path);
+    const fullparams = (value._params || {});
+    const rels = split(fullpath || '/');
+    const len = rels.length;
+    //only provide a link to this node; do not GET it
+    const link = !!value._link;
+    //accumulated, parameterized path
+    let pPath = '';
+
+    //eg special '/' path
+    //if provided then the root will appear alongside
+    //other mementos as {key}
+    if(len === 0) {
+        mapPath2Key(fullpath, key)
+        map[fullpath] = {
+            path: (fullpath || '/')
+            , length: len
+            , rels: []
+            , keys: [key]
+        }
+        return map
+    }
+
+    //accumulator for parts of the path
+    const parts = new Array(len);
+
+    //walk the parts of the path to
+    //build object for making requests using follow
+    for(let i = 0; i &lt; len; i++) {
+        const rel = rels[i];
+        const params = fullparams[rel];
+        // eg 'b?{&quot;foo&quot;:&quot;bar&quot;}'
+        const path = parameterize(rel, params);
+        // eg '/a/b?{&quot;foo&quot;:&quot;bar&quot;}'
+        pPath = `${pPath}/${path}`
+
+        //this is used during the .get request and subsequent
+        //caching of its results
+        parts[i] = {
+            rel: rel
+            ,params: (params || {})
+            , link: link
+            , cacheKey : pPath
+        }
+        if(map[pPath]) {
+            map[pPath].keys.push(key)
+        } else {
+            map[pPath] = {
+                keys: [key]
+                , path: pPath
+                , length: i + 1
+                , rels: parts.slice(0, i + 1)
+            }
+        }
+        //index paths mapped to the paths for easy retrieval later
+        if(i===len - 1) {
+            mapPath2Key(pPath, key)
+        }
+    }
+    return map
+
+}.bind(this),{});
+
+//precalculate the optimized, ordered array of paths
+const optimized = Object.keys(pathMap)
+    .sort((a, b) =&gt; {
+        const aLen = pathMap[a].length, bLen = pathMap[b].length;
+        if(aLen &lt; bLen) {
+            return -1
+        }
+        if(aLen &gt; bLen) {
+            return 1
+        }
+        return 0
+    })
+    .map(key =&gt; {
+        return pathMap[key]
+    });
+
+Object.assign(this, {
+    optimized() {
+        return optimized
+    }
+    ,rootNode() {
+        let value = this.spec[ROOT_KEY], resource = (value._resource ? value._resource : false);
+
+        //passed in resource as root
+        if(value.self &amp;&amp; value.get) {
+            resource = value
+        }
+        const url  = resource ? resource.self : ((isString(value) ?  value : value._url));
+        const parsed = parseUrl(url);
+        const node = {
+            url: url
+            , params: resource ? {} : (value._params || {})
+            , resource: resource
+            , protocol: parsed.protocol
+            , hostname: parsed.hostname
+            , pathname: parsed.pathname
+        };
+        if(!node.url) {
+            throw new Error(`${ROOT_KEY} must provide '_url'`)
+        }
+
+        return node
+    }
+    ,keysForPath(path) {
+        return (path2Keys[path] || [])
+    }
+})
+    });</code></pre>
+          <section id="requests">
+            <h1>requests</h1>
+            <h5 class="subheader"></h5>
+            <p>
+              <div class="label label-info radius ctx-type">function</div><span>&nbsp;</span><span>requests()</span><span>&nbsp;</span>
+            </p>
+          </section>
+          <div class="description"><p>encapsulates http access and traversal of the api<br />while caching common paths</p></div>
+          <pre><code class="language-javascript">function requests(cfg) {
+    return stampit()
+        .props({
+            indexed: cfg.indexed
+            ,opts: cfg.opts
+            , resourceFactory: cfg.resourceFactory
+        })
+        .init(function() {
+            const resourceFactory = this.resourceFactory;
+
+            function isResource(obj) {
+                return (obj.self &amp;&amp; obj.get &amp;&amp; obj.follow)
+            }
+
+            function parseRequest(request) {
+                if(isResource(request)) {
+                    return request
+                }
+                const response = request.response;
+                const body = response &amp;&amp; response.body, allow = response &amp;&amp; response.headers &amp;&amp; response.headers.allow;
+
+                return resourceFactory.parse({
+                        self: body._links.self.href
+                        ,body: body
+                        ,allow: allow
+                    })
+            }
+            function parse(requests) {
+                requests = [].concat(requests)
+                return requests.map(parseRequest.bind(this))
+            }
+
+            function flatten(results) {
+                return [].concat.apply([],results)
+            }</code></pre>
+          <section id="executeRel">
+            <h1>executeRel</h1>
+            <h5 class="subheader"></h5>
+            <p>
+              <div class="label label-info radius ctx-type">function</div><span>&nbsp;</span><span>executeRel()</span><span>&nbsp;</span>
+            </p>
+          </section>
+          <div class="description"><p>follows the relationship and parses the responses<br />to proper halibuts</p></div>
+          <pre><code class="language-javascript">function executeRel(rel, rels, responseCache, res) {
+    return res.follow(rel.rel)
+        .bind(this)
+        .then(parse)
+        .then(resources =&gt; {
+            if(!!rel.link) {
+                return resources
+            }
+            return Promise.map(resources, function(it) {
+                return it.get({ params: rel.params })
+            }.bind(this))
+        })
+        .then(parse)
+}</code></pre>
+          <section id="executeRels">
+            <h1>executeRels</h1>
+            <h5 class="subheader"></h5>
+            <p>
+              <div class="label label-info radius ctx-type">function</div><span>&nbsp;</span><span>executeRels()</span><span>&nbsp;</span>
+            </p>
+          </section>
+          <div class="description"><p>walk the rels from <code>index</code> and update cache with results</p></div>
+          <pre><code class="language-javascript">function executeRels(rels, index, responseCache, res) {
+    res = parse(res)
+    if(!rels.length || index &gt;= rels.length) {
+        return responseCache
+    }
+
+    res = res[0]
+    const rel = rels.slice(index, index + 1)[0];
+    if(!res.links(rel.rel).length) {
+        //cache empty links collection
+        //eg `_links: { myRel: [] }`
+        let arr;
+        responseCache[rel.cacheKey] = arr = (responseCache[rel.cacheKey]|| [])
+        return arr
+    }
+    return executeRel.call(this, rel, rels, responseCache, res)
+            .tap(results =&gt; {
+                let arr;
+                responseCache[rel.cacheKey] = arr = (responseCache[rel.cacheKey]|| [])
+                arr.push.apply(arr, results)
+            })
+            .then(results =&gt; {
+                return Promise.map(results,resource =&gt; {
+                    return executeRels.call(this, rels, index + 1, responseCache, resource)
+                })
+            })
+
+}</code></pre>
+          <section id="startAt">
+            <h1>startAt</h1>
+            <h5 class="subheader"></h5>
+            <p>
+              <div class="label label-info radius ctx-type">function</div><span>&nbsp;</span><span>startAt()</span><span>&nbsp;</span>
+            </p>
+          </section>
+          <div class="description"><p>find last rel having a cache entry and start executeRels from there</p></div>
+          <pre><code class="language-javascript">function startAt(rels, responseCache, root) {
+    for(let i = rels.length - 1; i &gt; -1; i--) {
+        const rel = rels[i];
+        const cached = responseCache[rel.cacheKey];
+        if(cached &amp;&amp; cached.length) {
+            //start walking with these cached entries
+            return Promise.map(
+                cached
+                ,executeRels.bind(this, rels, i + 1, responseCache)
+            )
+        }
+    }
+    //couldnt find a cache entry so just start at the beginning
+    return executeRels.call(this, rels, 0, responseCache, root)
+}
+
+function makeRequests(paths, responseCache, indexed, index, root) {
+    if(index &gt;= paths.length) {
+        return responseCache
+    }
+    const path = paths.slice(index, index + 1)[0];
+    const rels = path.rels;
+
+    return Promise.resolve(root)
+        .bind(this)
+        .then(startAt.bind(this, rels, responseCache ))
+        .then(results =&gt; {
+            return makeRequests.call(this,paths, responseCache, indexed, index + 1, root)
+        })
+}
+Object.assign(this, {
+    execute() {
+        const paths = this.indexed.optimized(), responseCache = {};
+        return this.discoverRoot(this.indexed.rootNode(), this.opts)
+            .tap(root =&gt; {
+                responseCache['/'] = root
+            })
+            .then(makeRequests.bind(this, paths, responseCache, this.indexed, 0))
+    }
+    , discoverRoot(rootNode, opts) {
+        if(rootNode.resource) {
+            //an actual instance was passed in as root node
+            //so just use that
+            return Promise.resolve(parse(rootNode.resource))
+        }
+        return resourceFactory.init({
+            self: rootNode.url
+            , discoverable: false
+        })
+        .then(res =&gt; {
+            const params = (rootNode.params || {});
+            return res.get({ params: params})
+        })
+        .then(parse)
+    }
+})
+        })
+        .create()
+
+}
+
+
+function ohmit(cfg) {
+    return stampit()
+        .init(function() {
+function mapRequestsToKeys(index, target, requests) {
+    //hydrate the `mementos` collection
+    //with the results of requests
+    Object.keys(requests)
+        .reduce((map, path) =&gt; {
+            const keys = index.keysForPath(path);
+            keys.forEach(key =&gt; {
+                map[key] = requests[path]
+            })
+            //special case _root
+            map[ROOT_KEY] = requests['/']
+            return map
+        }, target)
+
+}</code></pre>
+          <section id="chainResponse">
+            <h1>chainResponse</h1>
+            <h5 class="subheader"></h5>
+            <p>
+              <div class="label label-info radius ctx-type">function</div><span>&nbsp;</span><span>chainResponse()</span><span>&nbsp;</span>
+            </p>
+          </section>
+          <div class="description"><p>uses the <code>chain</code> option for <code>key</code> to construct a dynamic spec<br />and re-execute, assigning to the position at <code>index</code> in the original<br />response.</p></div>
+          <pre><code class="language-javascript">function chainResponse(key, mappable, arr, resource, index) {
+        //dynamic spec using the resource returned from prior invocation
+        const orig = (mappable &amp;&amp; mappable[key]);
+        if(!orig) {
+            return arr
+        }
+        if(!arr) {
+            throw new Error('The original memento collection must be passed in for assignment')
+        }
+        if(!resource) {
+            throw new Error('`resource` is required as it is the root of this chained spec.')
+        }
+        const spec = clone(orig);
+        spec._root = resource
+        return this.execute(spec)
+            .tap(res =&gt; {
+                //assign our new response to the original memento position at `key`
+                arr[index] = res.mementos
+            })
+            .return(arr)
+}
+Object.assign(this, {</code></pre>
+          <section id="execute">
+            <h1>execute</h1>
+            <h5 class="subheader"></h5>
+            <p>
+              <div class="label label-info radius ctx-type">method</div><span>&nbsp;</span><span>execute()</span><span>&nbsp;</span>
+            </p>
+          </section>
+          <div class="description"><p>The primary fn for ohmit, accepting a spec<br />object to be transformed into http results<br /><code>opts</code> currently has no usage</p></div>
+          <pre><code class="language-javascript">execute(spec, opts) {
+    const defaults =  { };
+    opts = Object.assign({}, defaults, opts)
+    const _index = index.build(spec);
+    const _requests = requests({
+        opts: opts
+        , resourceFactory: cfg.resourceFactory
+        , indexed: _index
+    });
+    //@todo return the optimized index
+    //for reuse later
+    const response = {
+        //the original spec
+        spec: spec
+        //the results of the requests
+        , mementos: {}
+    };
+
+
+    return _requests.execute()
+        .bind(this)
+        .tap(mapRequestsToKeys.bind(this, _index, response.mementos))
+        .tap(requests =&gt; {
+            const mappable = (spec._map || {});
+            return Promise.resolve(Object.keys(mappable))
+                .bind(this)
+                .reduce((map, key, index) =&gt; {
+                    const resources = map[key];
+                    if(!resources) {
+                        throw new Error(`key ${key} is not in the response`)
+                    }
+                    return Promise.resolve(resources)
+                        .bind(this)
+                        .reduce(chainResponse.bind(this,key,mappable), map[key])
+                        .return(map)
+                },response.mementos)
+        })
+        .return(response)
+}
+            })
+
+        })
+        .create()
+}
+ohmit.index = index.build</code></pre>
+        </div>
+      </div>
+    </div>
+    <footer class="footer">
+      <div class="container">
+        <p>Documentation generated with <a href="https://github.com/mr-doc/mr-doc">Mr. Doc </a> created by <a href="https://twitter.com/FGRibreau" data-show-count="false" class="twitter-follow-button">Francois-Guillaume Ribreau </a></p>
+        <p>Mr. Doc is sponsored by <a href="http://bringr.net/?btt" title="Outil d'analyse des réseaux sociaux" class="bringr">Bringr </a> and <a href="https://redsmin.com/?btt" title="Full Redis GUI" class="redsmin">Redsmin</a></p>
+        <p>Theme borrowed from Twitter Bootstrap</p>
+      </div>
+    </footer>
+    <script src="js/twitter-widget.min.js"></script>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap-transition.min.js"></script>
+    <script src="js/bootstrap-scrollspy.min.js"></script>
+    <script src="js/bootstrap-dropdown.min.js"></script>
+    <script src="js/bootstrap-collapse.min.js"></script>
+    <script src="js/bootstrap-affix.min.js"></script>
+    <script src="js/prism.min.js"></script>
+    <script src="js/index.min.js"></script>
+  </body>
+</html>

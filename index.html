@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width" charset="utf-8">
+    <title>ohmit</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/cayman.min.css">
+    <link rel="stylesheet" href="css/prism.min.css">
+    <link rel="stylesheet" href="css/index.min.css">
+    <link rel="stylesheet" href="css/docs.min.css">
+    <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
+  </head>
+  <body data-spy="scroll" data-target=".scrollspy">
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container"><a class="brand">Mr. Doc</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav pull-right sponsored"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <header id="overview" class="jumbotron subhead">
+      <div class="container">
+        <h1>ohmit</h1>
+        <p class="lead"></p>
+      </div>
+    </header>
+    <div class="container">
+      <div class="row">
+        <div class="span3 bs-docs-sidebar">
+          <ul class="nav nav-list bs-docs-sidenav affix-top">
+            <li class="active"><a href="index.html">Main</a></li>
+            <li><a href="ohmit.js.html">ohmit.js</a></li>
+          </ul>
+          <div class="scrollspy">
+            <ul class="nav nav-list bs-docs-sidenav affix-top">
+            </ul>
+          </div>
+        </div>
+        <div class="span9">
+          <section id="Main" class="readme"><h1>ohmit</h1>
+<h2>The <strong>O</strong>bject-<strong>H</strong>ypermedia <strong>M</strong>apper (OHM)</h2>
+<h2>What ohmit Will Do For You</h2>
+<p>Execute a plan to traverse an api and output an arbitrary object called a 'memento'.
+She does this with <code>GET</code> http methods and returns an object.
+The spec defined by your <em>execution plan</em> is found at the <code>mementos</code> attribute on the resulting object.
+She will support <code>params</code> at each level of traversal.</p>
+<h2>What ohmit Will Not Do For You</h2>
+<ul>
+<li>She will not support other methods. If your api sucks and you do <code>POST</code> to get resources or rely on
+bodies in methods other than <code>GET</code>, then your code is responsible to tolerate that.</li>
+<li>She will not transform data for you. If you want a bloated toolbelt library, see underscore.</li>
+<li>She will not magically extend your object. She has limited psychic powers so will fail to know what
+to do when Things Go Wrong. That is the concern for the caller.</li>
+</ul>
+<h2>Why?</h2>
+<p>Hypermedia clients are subject to complex traversal plans that really complicate testing and couple
+the application code to a particular hypermedia specification. This problem is identical to application
+code coupling itself to various persistence implementations. This coupling also severely complicates testing.
+<code>ohmit</code> aims to solve the coupling and testing complexity caused by connecting to a hypermedia (HATEOAS) api
+in the same way an Object-Relational Mapper does for relational data stores . Instead of forcing application
+code to speak the dialect of a specific api specification, <code>ohmit</code> abstracts away the construction of objects
+using <em>relationships</em> for paths. Link relationships are at the heart of a hypermedia api so it makes sense to
+<em>only</em> couple application code directly to those relationships and let a driver take care of the interpretation to
+a specific implementation (eg HAL, JSON API, etc).</p>
+<p>Note that currently ohmit only supports 'HAL' specification through the use of Halibut.</p>
+<h2>The Spec Object</h2>
+<p>The following attributes are supported for the spec object being executed by ohmit.</p>
+<pre><code class="language-js">
+var spec = {
+    //start traversal from this url
+    //you may also pass in a string for the value
+    _root: { _url : 'http://example.org/api' }
+    , a: {
+        //the relationship to follow
+        _path: '/a'
+        //the parameters (if any) to pass in for the relationship by key
+        , _params: {
+            a: { foo: 'bar'}
+        }
+        //specify whether to only construct a link, or to actuall GET the resources
+        //here, we are specifying to GET the resources at relationship 'a'
+        , _link: false
+    }
+    //same as 'a', but with only relationship passed (no params)
+    , shortA: '/a'
+    //specify paths (relationships) to follow
+    , b: '/a/b'
+    , c: {
+        _path: '/a/b/c'
+        //specify that the relationships at 'c' should NOT be GETted but instead
+        //return the unininitialized (unsynced) resources for each link
+        , _link: true
+    }
+}
+
+</code></pre>
+<ul>
+<li>
+<p><code>_root</code> <em>required</em> {String | Resource | Object} Either passing a url for the root, a resource, or an object having :</p>
+<ul>
+<li><code>_url</code> {String} The root url to begin traversal</li>
+<li><code>_resource</code> {Resource} The root resource instance to begin traversal from. This instance <em>must</em> expose <code>.get</code> and <code>.follow</code> operations, as well as have a <code>self</code> url. Passing this in negates any other <code>_root</code> config</li>
+<li><code>_params</code> {Object} Parameters to include in the <code>GET</code> for the root node</li>
+</ul>
+</li>
+<li>
+<p>any... <em>optional</em> The key/value pairs you want to map to resources at their relationship paths
+where each node can either be a <code>string</code> representing the relationship (link) or an object having:</p>
+</li>
+<li>
+<p><code>_path</code> <em>required</em> {String} The relationship (<code>rel</code>) to follow from the root. You can travel as deep as you like.</p>
+</li>
+<li>
+<p><code>_params</code> <em>optional</em> {Object} Map of relationship:parameter object to pass into the GET request for that relationship</p>
+</li>
+<li>
+<p><code>_link</code> <em>optional</em> {Boolean} Default : <strong>false</strong> Specifies the final relationship should not receive a GET request
+, but instead provide the uninitialized resources as their 'mementos'.</p>
+</li>
+</ul>
+<h2>Examples</h2>
+<p>Given these resources:</p>
+<pre><code class="language-js">
+var api = {
+    _links: {
+        self: { href: 'http://example.com/api'}
+        , a: { href: 'http://example.com/a'}
+    }
+}
+
+var a = {
+    _links: {
+        self: { href: 'http://example.com/a'}
+    }
+    , name: 'a'
+}
+
+</code></pre>
+<p>Given the following query plan execution:</p>
+<pre><code class="language-js">var q = {
+    _root: { 
+        _url: 'http://example.com/api'
+    }
+    , a: '/a'
+}
+
+var result = ohmit.execute(q)
+
+/** result
+{
+    spec: /* your spec object */
+    //here is the results
+    , mementos: {
+        a: [{
+            _links: {
+                self: { href: 'http://example.com/a'}
+            }
+            , name: 'a'
+        }]
+    }
+}
+**/
+
+</code></pre>
+<p><code>ohmit</code> will traverse the api starting at <code>http://example.com/api/</code> and
+follow the <code>_link</code> relationship of 'a' (<code>http://example.com/a</code>).</p>
+<p>The result will be found at <code>mementos</code> attribute keyed identical to the spec object:</p>
+<h2>Super Duper complex path</h2>
+<pre><code class="language-js">
+var api = {
+    _links: {
+        self: { href: '/api'}
+        , a: { href: '/a'}
+    }
+}
+
+var a = {
+    _links: {
+        self: { href: '/a'}
+        , b: { href: '/b'}
+    }
+}
+
+var b = {
+    _links: {
+        self: { href: '/b'}
+        , c: { href: '/c' }
+        , d: { href: '/d'}
+    }
+}
+
+var c = {
+    _links: {
+        self: { href: '/c'}
+    }
+}
+
+var d = {
+    _links: {
+        self: { href: '/d'}
+        , items: [ {
+            href: '/items'
+        } ]
+    }
+}
+
+var items = {
+    _links: {
+        self: { href: '/items'}
+        , item1: { href: '/item1'}
+        , item2: { href: '/item2'}
+    }
+}
+
+var item1 = {
+    _links: {
+        self: { href: '/item1'}
+    }
+}
+var item2 = {
+    _links: {
+        self: { href: '/item2'}
+    }
+}
+</code></pre>
+<pre><code class="language-js">
+var q = {
+    _root: { _url: '/api'}
+    , c: {
+        _path: '/a/b/c'
+        , _params: { 
+            a: {
+                foo: 'bar'
+            }
+            , b: {
+                baz: 'biz'
+            }
+        }
+    }
+    , item1: {
+        _path: '/a/b/d/items/item1'
+        , _params: { 
+            a: {
+                foo: 'bar'
+            }
+            , b: {
+                baz: 'biz'
+            }
+        }
+    }
+    ,item2: {
+        _path: '/a/b/d/items/item2'
+        , _params: { 
+            a: {
+                foo: 'bar'
+            }
+            , b: {
+                baz: 'biz'
+            }
+        }
+
+    }
+}
+
+//expects
+var result = {
+    spec: /* yore spec object */
+    , mementos: {
+        c: [cResource]
+        , item1: [item1Resource]
+        , item2: [item2Resource]
+    }
+}
+</code></pre>
+</section>
+        </div>
+      </div>
+    </div>
+    <footer class="footer">
+      <div class="container">
+        <p>Documentation generated with <a href="https://github.com/mr-doc/mr-doc">Mr. Doc </a> created by <a href="https://twitter.com/FGRibreau" data-show-count="false" class="twitter-follow-button">Francois-Guillaume Ribreau </a></p>
+        <p>Mr. Doc is sponsored by <a href="http://bringr.net/?btt" title="Outil d'analyse des réseaux sociaux" class="bringr">Bringr </a> and <a href="https://redsmin.com/?btt" title="Full Redis GUI" class="redsmin">Redsmin</a></p>
+        <p>Theme borrowed from Twitter Bootstrap</p>
+      </div>
+    </footer>
+    <script src="js/twitter-widget.min.js"></script>
+    <script src="js/jquery.min.js"></script>
+    <script src="js/bootstrap-transition.min.js"></script>
+    <script src="js/bootstrap-scrollspy.min.js"></script>
+    <script src="js/bootstrap-dropdown.min.js"></script>
+    <script src="js/bootstrap-collapse.min.js"></script>
+    <script src="js/bootstrap-affix.min.js"></script>
+    <script src="js/prism.min.js"></script>
+    <script src="js/index.min.js"></script>
+  </body>
+</html>
