@@ -12,21 +12,20 @@ export default function(models = {}) {
     }
 
     let resourceFactory = {
-        parse: function({ self, body, allow}) {
-            return inMemory({self,body,allow})
+        parse: function({ self, body }) {
+            return inMemory({self,body })
         }
-        , init: function({self}) {
-            return Promise.resolve(inMemory({self}))
+        , createResource: function({ self, body }) {
+            return Promise.resolve(inMemory({ self, body}))
         }
     }
-    let inMemory = function({self,body,allow}){
+    let inMemory = function({self,body}){
         let model = models[self]
         if(!model) {
             throw new Error('missing model ' + self)
         }
         let fauxResponse = {
-            headers: { allow }
-            , body: body
+            body: body
         }
         //this is the contract ohmit requires to traverse an api
         let resource = {
@@ -37,7 +36,6 @@ export default function(models = {}) {
                 Object.assign(this,model.response.body)
                 let result = {
                     response: model.response
-                    , allow: model.response.headers['allow']
                     , resource: this
                 }
                 return Promise.resolve(result)
@@ -55,7 +53,7 @@ export default function(models = {}) {
                 let links = this.links(rel)
                 return Promise.resolve(links)
                 .map(function(item) {
-                    return resourceFactory.init({self:item.href})
+                    return resourceFactory.createResource({self:item.href})
                 })
             }
         }

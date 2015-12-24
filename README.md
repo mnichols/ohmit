@@ -30,9 +30,6 @@ using _relationships_ for paths. Link relationships are at the heart of a hyperm
 _only_ couple application code directly to those relationships and let a driver take care of the interpretation to 
 a specific implementation (eg HAL, JSON API, etc).
 
-Note that currently ohmit only supports 'HAL' specification through the use of Halibut.
-
-
 ## The Spec Object
 
 The following attributes are supported for the spec object being executed by ohmit.
@@ -250,6 +247,45 @@ var result = {
 }
 ```
 
+## How To Connect
+
+`ohmit` expects a `resourceFactory` that conforms to this interface:
+
+```js
+{
+    parse: function({body,self,allow}) {
+        //returns a resource instance
+    }
+    , init: function({self}) {
+        //returns a Promise resolving an resource instance
+    }
+}
+
+```
+
+`ohmit` interacts with resources conforming to this interface:
+
+```js
+{
+    links: function(rel) {
+        //returns an Array of links for the given relationship
+    }
+    , get: function({params}) {
+        //returns a Promise resolving { resource: <Resource> instance, response: <http response>}
+    }
+    , follow: function(rel) {
+        //returns a Promise resolving an Array of resource instances for the given relationship
+        //should not perform a GET
+    }
+    /** 
+     * the URI for this resource
+     **/
+    , self: {Url} 
+    , response: {Response having at least { body, headers }}
+}
+
+```
+
 ### Running tests
 
 **NodeJS**
@@ -260,3 +296,5 @@ var result = {
 `npm run serve`
 
 In your browser, visit `http://localhost:3000/test-runner.html` and look in the console.
+
+

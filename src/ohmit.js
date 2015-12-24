@@ -207,12 +207,11 @@ function requests(cfg) {
                     return request
                 }
                 const response = request.response;
-                const body = response && response.body, allow = response && response.headers && response.headers.allow;
+                const body = response && response.body
 
                 return resourceFactory.parse({
                         self: body._links.self.href
                         ,body: body
-                        ,allow: allow
                     })
             }
             function parse(requests) {
@@ -234,6 +233,7 @@ function requests(cfg) {
                     .bind(this)
                     .then(parse)
                     .then(resources => {
+                        //do not perform a GET for this rel (`_link` was passed)
                         if(!!rel.link) {
                             return resources
                         }
@@ -322,9 +322,8 @@ function requests(cfg) {
                         //so just use that
                         return Promise.resolve(parse(rootNode.resource))
                     }
-                    return resourceFactory.init({
+                    return resourceFactory.createResource({
                         self: rootNode.url
-                        , discoverable: false
                     })
                     .then(res => {
                         const params = (rootNode.params || {});
