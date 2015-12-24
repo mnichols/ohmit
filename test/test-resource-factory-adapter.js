@@ -12,10 +12,7 @@ export default function(models = {}) {
     }
 
     let resourceFactory = {
-        parse: function({ self, body }) {
-            return inMemory({self,body })
-        }
-        , createResource: function({ self, body }) {
+        createResource: function({ self, body }) {
             return Promise.resolve(inMemory({ self, body}))
         }
     }
@@ -38,7 +35,7 @@ export default function(models = {}) {
                     response: model.response
                     , resource: this
                 }
-                return Promise.resolve(result)
+                return Promise.resolve(this)
             }
             , links: function(rel) {
                 let links = [].concat(this._links[rel])

@@ -209,14 +209,15 @@ function requests(cfg) {
                 const response = request.response;
                 const body = response && response.body
 
-                return resourceFactory.parse({
+                return resourceFactory.createResource({
                         self: body._links.self.href
                         ,body: body
                     })
             }
             function parse(requests) {
                 requests = [].concat(requests)
-                return requests.map(parseRequest.bind(this))
+                return Promise.resolve(requests)
+                .map(parseRequest.bind(this))
             }
 
             function flatten(results) {
@@ -225,13 +226,12 @@ function requests(cfg) {
 
            /**
             * follows the relationship and parses the responses
-            * to proper halibuts
-            * @return {Array} of halibuts
+            * to proper resources
+            * @return {Promise} resolving an Array of hydrated resources
             * */
             function executeRel(rel, rels, responseCache, res) {
                 return res.follow(rel.rel)
                     .bind(this)
-                    .then(parse)
                     .then(resources => {
                         //do not perform a GET for this rel (`_link` was passed)
                         if(!!rel.link) {
@@ -241,18 +241,20 @@ function requests(cfg) {
                             return it.get({ params: rel.params })
                         }.bind(this))
                     })
-                    .then(parse)
+                    .then(res=>{
+                        return [].concat(res)
+                    })
             }
             /**
              * walk the rels from `index` and update cache with results
              * */
             function executeRels(rels, index, responseCache, res) {
-                res = parse(res)
                 if(!rels.length || index >= rels.length) {
                     return responseCache
                 }
-
-                res = res[0]
+                if(Array.isArray(res)) {
+                    res = res[0]
+                }
                 const rel = rels.slice(index, index + 1)[0];
                 if(!res.links(rel.rel).length) {
                     //cache empty links collection
@@ -272,7 +274,6 @@ function requests(cfg) {
                                 return executeRels.call(this, rels, index + 1, responseCache, resource)
                             })
                         })
-
             }
             /**
              * find last rel having a cache entry and start executeRels from there
@@ -312,6 +313,7 @@ function requests(cfg) {
                     const paths = this.indexed.optimized(), responseCache = {};
                     return this.discoverRoot(this.indexed.rootNode(), this.opts)
                         .tap(root => {
+                            //root is an Array of { resource, response }
                             responseCache['/'] = root
                         })
                         .then(makeRequests.bind(this, paths, responseCache, this.indexed, 0))
@@ -320,7 +322,7 @@ function requests(cfg) {
                     if(rootNode.resource) {
                         //an actual instance was passed in as root node
                         //so just use that
-                        return Promise.resolve(parse(rootNode.resource))
+                        return Promise.resolve([rootNode.resource])
                     }
                     return resourceFactory.createResource({
                         self: rootNode.url
@@ -329,7 +331,9 @@ function requests(cfg) {
                         const params = (rootNode.params || {});
                         return res.get({ params: params})
                     })
-                    .then(parse)
+                    .then(res => {
+                        return [].concat(res)
+                    })
                 }
             })
         })
