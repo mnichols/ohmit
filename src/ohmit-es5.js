@@ -1,23 +1,21 @@
-"use strict";
+'use strict';
 
-const stampit = require('stampit'), Promise = require('bluebird'), clone = require('clone'), parseUrl = require('url').parse;
+var stampit = require('stampit')
+    , Promise = require('bluebird')
+    , clone = require('clone')
+    , parseUrl = require('url').parse
 
-export default ohmit
 
-let ROOT_KEY = '_root';
-let index = stampit()
-    .static({
-        build: function(spec) {
-            return index({
-                spec: spec
-            })
-        }
-    })
+module.exports = bertha
+
+var  ROOT_KEY = '_root'
+var index = stampit()
     .props({
         spec: {}
     })
-    .init(function() {
-        const keys = Object.keys(this.spec), path2Keys = {};
+    .init(function(){
+        var keys = Object.keys(this.spec)
+            , path2Keys = {}
             ;
 
         function isString(obj) {
@@ -25,21 +23,21 @@ let index = stampit()
         }
         function split(path) {
             return path.split('/')
-                .filter(p => {
+                .filter(function(p) {
                     return !!p.length
                 })
         }
         function join(arr) {
-            return `/${arr.join('/')}`
+            return '/' + arr.join('/')
         }
         function parameterize(rel, params) {
             if(!params) {
                 return rel
             }
-            return `${rel}?${JSON.stringify(params)}`
+            return rel + '?' + JSON.stringify(params)
         }
         function mapPath2Key(path, key) {
-            let arr;
+            var arr
             path2Keys[path] = arr = (path2Keys[path] || [])
             arr.push(key)
         }
@@ -53,11 +51,11 @@ let index = stampit()
         *       - `params` : {Object} of params to include in request
         *       - `cacheKey` : {String} of parameterized path
         **/
-        const pathMap = keys.reduce(function(map, key, index) {
+        var pathMap = keys.reduce(function(map, key, index){
             //special handling for _root key
             //always inserting a '/' path into the map
             if(key === ROOT_KEY) {
-                mapPath2Key('/', key)
+                mapPath2Key('/',key)
                 map['/'] = {
                     path: '/'
                     , length: 0
@@ -66,15 +64,15 @@ let index = stampit()
                 }
                 return map
             }
-            const value = this.spec[key];
-            let fullpath = (isString(value) ? value : value._path);
-            const fullparams = (value._params || {});
-            const rels = split(fullpath || '/');
-            const len = rels.length;
+            var value = this.spec[key]
+            var fullpath = (isString(value) ? value : value._path)
+            var fullparams = (value._params || {})
+            var rels = split(fullpath || '/')
+            var len = rels.length
             //only provide a link to this node; do not GET it
-            const link = !!value._link;
+            var link = !!value._link
             //accumulated, parameterized path
-            let pPath = '';
+            var pPath = ''
 
             //eg special '/' path
             //if provided then the root will appear alongside
@@ -91,17 +89,17 @@ let index = stampit()
             }
 
             //accumulator for parts of the path
-            const parts = new Array(len);
+            var parts = new Array(len)
 
             //walk the parts of the path to
             //build object for making requests using follow
-            for(let i = 0; i < len; i++) {
-                const rel = rels[i];
-                const params = fullparams[rel];
+            for(var i = 0; i < len; i++) {
+                var rel = rels[i]
+                var params = fullparams[rel]
                 // eg 'b?{"foo":"bar"}'
-                const path = parameterize(rel, params);
+                var path = parameterize(rel, params)
                 // eg '/a/b?{"foo":"bar"}'
-                pPath = `${pPath}/${path}`
+                pPath = (pPath + '/' + path)
 
                 //this is used during the .get request and subsequent
                 //caching of its results
@@ -128,12 +126,13 @@ let index = stampit()
             }
             return map
 
-        }.bind(this),{});
+        }.bind(this),{})
 
         //precalculate the optimized, ordered array of paths
-        const optimized = Object.keys(pathMap)
-            .sort((a, b) => {
-                const aLen = pathMap[a].length, bLen = pathMap[b].length;
+        var optimized = Object.keys(pathMap)
+            .sort(function(a,b){
+                var aLen = pathMap[a].length
+                    ,bLen = pathMap[b].length
                 if(aLen < bLen) {
                     return -1
                 }
@@ -142,43 +141,49 @@ let index = stampit()
                 }
                 return 0
             })
-            .map(key => {
+            .map(function(key){
                 return pathMap[key]
-            });
+            })
 
-        Object.assign(this, {
-            optimized() {
+        stampit.mixIn(this, {
+            optimized: function(){
                 return optimized
             }
-            ,rootNode() {
-                let value = this.spec[ROOT_KEY], resource = (value._resource ? value._resource : false);
+            ,rootNode: function(){
+                var value = this.spec[ROOT_KEY]
+                    , resource = (value._resource ? value._resource : false)
 
                 //passed in resource as root
                 if(value.self && value.get) {
                     resource = value
                 }
-                const url  = resource ? resource.self : ((isString(value) ?  value : value._url));
-                const parsed = parseUrl(url);
-                const node = {
+                var url  = resource ? resource.self : ((isString(value) ?  value : value._url))
+                var parsed = parseUrl(url)
+                var node = {
                     url: url
                     , params: resource ? {} : (value._params || {})
                     , resource: resource
                     , protocol: parsed.protocol
                     , hostname: parsed.hostname
                     , pathname: parsed.pathname
-                };
+                }
                 if(!node.url) {
-                    throw new Error(`${ROOT_KEY} must provide '_url'`)
+                    throw new Error(ROOT_KEY + ' must provide `_url`')
                 }
 
                 return node
             }
-            ,keysForPath(path) {
+            ,keysForPath: function(path) {
                 return (path2Keys[path] || [])
             }
         })
-    });
+    })
 
+index.build = function(spec) {
+    return index({
+        spec: spec
+    })
+}
 
 
 /**
@@ -192,10 +197,10 @@ function requests(cfg) {
             ,opts: cfg.opts
             , resourceFactory: cfg.resourceFactory
         })
-        .init(function() {
-            const resourceFactory = this.resourceFactory;
+        .init(function(){
+            var resourceFactory = this.resourceFactory
 
-            function isResource(obj) {
+            function isResource(obj){
                 return (obj.self && obj.get && obj.follow)
             }
 
@@ -203,8 +208,9 @@ function requests(cfg) {
                 if(isResource(request)) {
                     return request
                 }
-                const response = request.response;
-                const body = response && response.body, allow = response && response.headers && response.headers.allow;
+                var response = request.response
+                var body = response && response.body
+                    ,allow = response && response.headers && response.headers.allow
 
                 return resourceFactory.parse({
                         self: body._links.self.href
@@ -230,11 +236,11 @@ function requests(cfg) {
                 return res.follow(rel.rel)
                     .bind(this)
                     .then(parse)
-                    .then(resources => {
+                    .then(function(resources){
                         if(!!rel.link) {
                             return resources
                         }
-                        return Promise.map(resources, function(it) {
+                        return Promise.map(resources, function(it){
                             return it.get({ params: rel.params })
                         }.bind(this))
                     })
@@ -250,22 +256,22 @@ function requests(cfg) {
                 }
 
                 res = res[0]
-                const rel = rels.slice(index, index + 1)[0];
+                var rel = rels.slice(index, index + 1)[0]
                 if(!res.links(rel.rel).length) {
                     //cache empty links collection
                     //eg `_links: { myRel: [] }`
-                    let arr;
-                    responseCache[rel.cacheKey] = arr = (responseCache[rel.cacheKey]|| [])
+                    var arr
+                    responseCache[rel.cacheKey]  = arr = (responseCache[rel.cacheKey]|| [])
                     return arr
                 }
                 return executeRel.call(this, rel, rels, responseCache, res)
-                        .tap(results => {
-                            let arr;
-                            responseCache[rel.cacheKey] = arr = (responseCache[rel.cacheKey]|| [])
+                        .tap(function(results) {
+                            var arr
+                            responseCache[rel.cacheKey]  = arr = (responseCache[rel.cacheKey]|| [])
                             arr.push.apply(arr, results)
                         })
-                        .then(results => {
-                            return Promise.map(results,resource => {
+                        .then(function(results){
+                            return Promise.map(results,function(resource){
                                 return executeRels.call(this, rels, index + 1, responseCache, resource)
                             })
                         })
@@ -275,9 +281,9 @@ function requests(cfg) {
              * find last rel having a cache entry and start executeRels from there
              * */
             function startAt(rels, responseCache, root) {
-                for(let i = rels.length - 1; i > -1; i--) {
-                    const rel = rels[i];
-                    const cached = responseCache[rel.cacheKey];
+                for(var i = rels.length - 1; i > -1; i--) {
+                    var rel = rels[i]
+                    var cached = responseCache[rel.cacheKey]
                     if(cached && cached.length) {
                         //start walking with these cached entries
                         return Promise.map(
@@ -290,30 +296,31 @@ function requests(cfg) {
                 return executeRels.call(this, rels, 0, responseCache, root)
             }
 
-            function makeRequests(paths, responseCache, indexed, index, root) {
+            function makeRequests(paths, responseCache, indexed, index,  root) {
                 if(index >= paths.length) {
                     return responseCache
                 }
-                const path = paths.slice(index, index + 1)[0];
-                const rels = path.rels;
+                var path = paths.slice(index, index + 1)[0]
+                var rels = path.rels
 
                 return Promise.resolve(root)
                     .bind(this)
                     .then(startAt.bind(this, rels, responseCache ))
-                    .then(results => {
+                    .then(function(results){
                         return makeRequests.call(this,paths, responseCache, indexed, index + 1, root)
                     })
             }
-            Object.assign(this, {
-                execute() {
-                    const paths = this.indexed.optimized(), responseCache = {};
+            stampit.mixIn(this, {
+                execute: function() {
+                    var paths = this.indexed.optimized()
+                        , responseCache = {}
                     return this.discoverRoot(this.indexed.rootNode(), this.opts)
-                        .tap(root => {
+                        .tap(function(root){
                             responseCache['/'] = root
                         })
                         .then(makeRequests.bind(this, paths, responseCache, this.indexed, 0))
                 }
-                , discoverRoot(rootNode, opts) {
+                , discoverRoot: function(rootNode, opts) {
                     if(rootNode.resource) {
                         //an actual instance was passed in as root node
                         //so just use that
@@ -323,8 +330,8 @@ function requests(cfg) {
                         self: rootNode.url
                         , discoverable: false
                     })
-                    .then(res => {
-                        const params = (rootNode.params || {});
+                    .then(function(res){
+                        var params = (rootNode.params || {})
                         return res.get({ params: params})
                     })
                     .then(parse)
@@ -336,16 +343,16 @@ function requests(cfg) {
 }
 
 
-function ohmit(cfg) {
+function bertha(cfg) {
     return stampit()
-        .init(function() {
+        .init(function(){
             function mapRequestsToKeys(index, target, requests) {
                 //hydrate the `mementos` collection
                 //with the results of requests
                 Object.keys(requests)
-                    .reduce((map, path) => {
-                        const keys = index.keysForPath(path);
-                        keys.forEach(key => {
+                    .reduce(function(map, path){
+                        var keys = index.keysForPath(path)
+                        keys.forEach(function(key){
                             map[key] = requests[path]
                         })
                         //special case _root
@@ -360,9 +367,9 @@ function ohmit(cfg) {
              * and re-execute, assigning to the position at `index` in the original
              * response.
              * */
-            function chainResponse(key, mappable, arr, resource, index) {
+            function chainResponse(key, mappable, arr, resource, index){
                     //dynamic spec using the resource returned from prior invocation
-                    const orig = (mappable && mappable[key]);
+                    var orig = (mappable && mappable[key])
                     if(!orig) {
                         return arr
                     }
@@ -372,51 +379,51 @@ function ohmit(cfg) {
                     if(!resource) {
                         throw new Error('`resource` is required as it is the root of this chained spec.')
                     }
-                    const spec = clone(orig);
+                    var spec = clone(orig)
                     spec._root = resource
                     return this.execute(spec)
-                        .tap(res => {
+                        .tap(function(res){
                             //assign our new response to the original memento position at `key`
                             arr[index] = res.mementos
                         })
                         .return(arr)
             }
-            Object.assign(this, {
+            stampit.mixIn(this, {
                 /**
-                 * The primary fn for ohmit, accepting a spec
+                 * The primary fn for bertha, accepting a spec
                  * object to be transformed into http results
                  * `opts` currently has no usage
                  * */
-                execute(spec, opts) {
-                    const defaults =  { };
-                    opts = Object.assign({}, defaults, opts)
-                    const _index = index.build(spec);
-                    const _requests = requests({
+                execute: function(spec, opts) {
+                    var defaults =  { }
+                    opts = stampit.mixIn( defaults, opts)
+                    var _index = index.build(spec)
+                    var _requests = requests({
                         opts: opts
                         , resourceFactory: cfg.resourceFactory
                         , indexed: _index
-                    });
+                    })
                     //@todo return the optimized index
                     //for reuse later
-                    const response = {
+                    var response = {
                         //the original spec
                         spec: spec
                         //the results of the requests
                         , mementos: {}
-                    };
+                    }
 
 
                     return _requests.execute()
                         .bind(this)
                         .tap(mapRequestsToKeys.bind(this, _index, response.mementos))
-                        .tap(requests => {
-                            const mappable = (spec._map || {});
+                        .tap(function(requests){
+                            var mappable = (spec._map || {})
                             return Promise.resolve(Object.keys(mappable))
                                 .bind(this)
-                                .reduce((map, key, index) => {
-                                    const resources = map[key];
+                                .reduce(function(map, key,index){
+                                    var resources = map[key]
                                     if(!resources) {
-                                        throw new Error(`key ${key} is not in the response`)
+                                        throw new Error('key `' + key + '` is not in the response')
                                     }
                                     return Promise.resolve(resources)
                                         .bind(this)
@@ -431,4 +438,4 @@ function ohmit(cfg) {
         })
         .create()
 }
-ohmit.index = index.build
+bertha.index = index.build
