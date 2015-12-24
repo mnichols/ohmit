@@ -250,3 +250,13 @@ var result = {
 }
 ```
 
+### Running tests
+
+**NodeJS**
+`npm test`
+
+**Browser**
+
+`npm run serve`
+
+In your browser, visit `http://localhost:3000/test-runner.html` and look in the console.

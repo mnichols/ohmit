@@ -1,6 +1,9 @@
 "use strict";
 
-const stampit = require('stampit'), Promise = require('bluebird'), clone = require('clone'), parseUrl = require('url').parse;
+import stampit from 'stampit'
+import Promise from 'bluebird'
+import clone from 'clone'
+import {parse as parseUrl} from 'url'
 
 export default ohmit
 
