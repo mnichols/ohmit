@@ -154,13 +154,21 @@ let index = stampit()
                 return optimized
             }
             ,rootNode() {
-                let value = this.spec[ROOT_KEY], resource = (value._resource ? value._resource : false);
+                let value = this.spec[ROOT_KEY]
+                let resource = (value._resource ? value._resource : false);
 
                 //passed in resource as root
                 if(value.self && value.get) {
                     resource = value
                 }
-                const url  = resource ? resource.self : ((isString(value) ?  value : value._url));
+                let url = resource.self
+                if(url && toString.call(url) == '[object Function]') {
+                    url = resource.self()
+                } else if(isString(value)) {
+                    url = value
+                } else {
+                    url = value._url
+                }
                 const parsed = parseUrl(url);
                 const node = {
                     url: url
@@ -238,7 +246,7 @@ function requests(cfg) {
                     res = res[0]
                 }
                 const rel = rels.slice(index, index + 1)[0];
-                if(!res.links(rel.rel).length) {
+                if(!res.hasRelation(rel.rel)) {
                     //cache empty links collection
                     //eg `_links: { myRel: [] }`
                     let arr;

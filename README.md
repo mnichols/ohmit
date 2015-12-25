@@ -247,41 +247,28 @@ var result = {
 }
 ```
 
-## How To Connect
+## Writing your hypermedia adapter
 
 `ohmit` expects a `resourceFactory` that conforms to this interface:
 
 ```js
 {
-    parse: function({body,self,allow}) {
-        //returns a resource instance
-    }
-    , init: function({self}) {
-        //returns a Promise resolving an resource instance
-    }
+    // @return a Promise that resolves to a single resourceAdapter at `self` URI
+    createResource: function({self}) { /** returns a resource instance **/ }
 }
 
 ```
 
-`ohmit` interacts with resources conforming to this interface:
+`ohmit` interacts with a resource adapter for traversal through its
+related links. The resource adapter interface must meet this contract:
 
 ```js
 {
-    links: function(rel) {
-        //returns an Array of links for the given relationship
-    }
-    , get: function({params}) {
-        //returns a Promise resolving { resource: <Resource> instance, response: <http response>}
-    }
-    , follow: function(rel) {
-        //returns a Promise resolving an Array of resource instances for the given relationship
-        //should not perform a GET
-    }
-    /** 
-     * the URI for this resource
-     **/
-    , self: {Url} 
-    , response: {Response having at least { body, headers }}
+    self          : function() { /** return a url string identifying the location of the resource **/ }
+    , get         : function({params}) { /** return a Promise resolving an resource adapter. should be hydrated ** / }
+    , hasRelation : function(rel) { /** return a Boolean answering if this resource is related by `rel` **/ }
+    , follow      : function() { /** return a Promise resolving an Array of resource adapters which are related by `rel`. Should not perform GET operations ** / }
+    , resource    : function() { /** return a Promise or the underlying resource the resource adapter is wrapping; could lazily load the resource (eg Proxy) **/ }
 }
 
 ```

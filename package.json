@@ -1,11 +1,11 @@
 {
   "name": "ohmit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Object-Hypermedia Mapper",
   "main": "./dist/ohmit.js",
   "scripts": {
     "clean": "rimraf dist/* && mkdir dist || true",
-    "test": "babel-tape-runner ./test/**/*-spec.js #| faucet",
+    "test": "babel-tape-runner ./test/**/*-spec.js | faucet",
     "build": "npm run clean && babel src --out-dir dist",
     "docs": "mr-doc --source src --output docs --name ohmit",
     "gh-pages": "npm run docs && gh-pages -d docs",

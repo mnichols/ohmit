@@ -22,31 +22,39 @@ export default function(models = {}) {
             throw new Error('missing model ' + self)
         }
         //this is the contract ohmit requires to traverse an api
-        let resource = {
-            self: self
+        let resourceAdapter = {
+            // returns a function which returns a URI for this resource
+            self: function() {
+                return self
+            }
+            // performs a GET (for http) or hash lookup
+            // and returns a fully hydrated resource
             , get: function(args) {
                 gets[self] = (gets[self] || 0) + 1
                 Object.assign(this,model.response.body)
                 return Promise.resolve(this)
             }
-            , links: function(rel) {
-                let links = [].concat(this._links[rel])
-                .filter(function(lnk) {
-                    return !!lnk && lnk.href
-                })
-                return links
+            // returns {Boolean} indicating whether the resource
+            // is related by `rel`
+            , hasRelation: function(rel) {
+                return !!this._links[rel]
             }
             // grabs the links and returns init'ed resources...
             // does NOT perform a GET
             , follow: function(rel) {
-                let links = this.links(rel)
+                let links = [].concat(this._links[rel] || [])
                 return Promise.resolve(links)
                 .map(function(item) {
                     return resourceFactory.createResource({self:item.href})
                 })
             }
+            // gets underlying resource
+            // or a Promise that realizes the resource (eg a Proxy)
+            , resource: function() {
+                return this
+            }
         }
-        return Object.assign(resource,body)
+        return Object.assign(resourceAdapter,body)
     }
     return {
         resourceFactory

@@ -15,7 +15,7 @@ test('simple connect works with adapter',(assert) =>{
     }
     return sut.execute(q)
     .then((result)=>{
-        assert.equal(result.mementos.a[0].self,'/apiColl/a')
+        assert.equal(result.mementos.a[0].self(),'/apiColl/a')
     })
 })
 test('complex connect works with adapter',(assert) =>{
@@ -54,15 +54,15 @@ test('complex connect works with adapter',(assert) =>{
     }
     return sut.execute(q)
     .then(({mementos})=>{
-        assert.equal(mementos.jiboo[0].self,'/apiColl')
-        assert.equal(mementos.a[0].self,'/apiColl/a')
-        assert.equal(mementos._root[0].self,'/apiColl')
-        assert.equal(mementos.b[0].self,'/apiColl/b1')
-        assert.equal(mementos.b[1].self,'/apiColl/b2')
-        assert.equal(mementos.d[0].self,'/apiColl/d1')
-        assert.equal(mementos.d[1].self,'/apiColl/d2')
-        assert.equal(mementos.f[0].self,'/apiColl/f1')
-        assert.equal(mementos.z[0].self,'/apiColl/z')
+        assert.equal(mementos.jiboo[0].self(),'/apiColl')
+        assert.equal(mementos.a[0].self(),'/apiColl/a')
+        assert.equal(mementos._root[0].self(),'/apiColl')
+        assert.equal(mementos.b[0].self(),'/apiColl/b1')
+        assert.equal(mementos.b[1].self(),'/apiColl/b2')
+        assert.equal(mementos.d[0].self(),'/apiColl/d1')
+        assert.equal(mementos.d[1].self(),'/apiColl/d2')
+        assert.equal(mementos.f[0].self(),'/apiColl/f1')
+        assert.equal(mementos.z[0].self(),'/apiColl/z')
     })
 })
 test('common paths are optimized GETs',(assert) => {
@@ -79,8 +79,8 @@ test('common paths are optimized GETs',(assert) => {
     }
     return sut.execute(q)
     .then(({mementos})=>{
-        assert.equal(mementos.c[0].self,'/api/c')
-        assert.equal(mementos.d[0].self,'/api/d')
+        assert.equal(mementos.c[0].self(),'/api/c')
+        assert.equal(mementos.d[0].self(),'/api/d')
         assert.equal(numberOfGets('/api'),1)
         assert.equal(numberOfGets('/api/a'),1)
         assert.equal(numberOfGets('/api/b'),1)
@@ -109,14 +109,14 @@ test('fqdn _root behaves as expected', (assert) => {
     }
     return sut.execute(q)
     .then(({mementos})=>{
-        assert.equal(mementos.jiboo[0].self,'http://localhost:8080/fqdnApi')
-        assert.equal(mementos.a[0].self,'http://localhost:8080/fqdnApi/a')
-        assert.equal(mementos._root[0].self,'http://localhost:8080/fqdnApi')
-        assert.equal(mementos.b[0].self,'http://localhost:8080/fqdnApi/b1')
-        assert.equal(mementos.b[1].self,'http://localhost:8080/fqdnApi/b2')
-        assert.equal(mementos.d[0].self,'http://localhost:8080/fqdnApi/d1')
-        assert.equal(mementos.d[1].self,'http://localhost:8080/fqdnApi/d2')
-        assert.equal(mementos.f[0].self,'http://localhost:8080/fqdnApi/f1')
+        assert.equal(mementos.jiboo[0].self(),'http://localhost:8080/fqdnApi')
+        assert.equal(mementos.a[0].self(),'http://localhost:8080/fqdnApi/a')
+        assert.equal(mementos._root[0].self(),'http://localhost:8080/fqdnApi')
+        assert.equal(mementos.b[0].self(),'http://localhost:8080/fqdnApi/b1')
+        assert.equal(mementos.b[1].self(),'http://localhost:8080/fqdnApi/b2')
+        assert.equal(mementos.d[0].self(),'http://localhost:8080/fqdnApi/d1')
+        assert.equal(mementos.d[1].self(),'http://localhost:8080/fqdnApi/d2')
+        assert.equal(mementos.f[0].self(),'http://localhost:8080/fqdnApi/f1')
     })
 })
 test('link nodes should not GET that link node but return the resource',(assert) => {
@@ -136,7 +136,7 @@ test('link nodes should not GET that link node but return the resource',(assert)
     }
     return sut.execute(q)
     .then(({mementos})=> {
-        assert.equal(mementos.d[0].self,'/api/d')
+        assert.equal(mementos.d[0].self(),'/api/d')
         assert.equal(numberOfGets('/api/d'),0)
     })
 })
