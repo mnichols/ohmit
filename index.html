@@ -64,7 +64,6 @@ code to speak the dialect of a specific api specification, <code>ohmit</code> ab
 using <em>relationships</em> for paths. Link relationships are at the heart of a hypermedia api so it makes sense to
 <em>only</em> couple application code directly to those relationships and let a driver take care of the interpretation to
 a specific implementation (eg HAL, JSON API, etc).</p>
-<p>Note that currently ohmit only supports 'HAL' specification through the use of Halibut.</p>
 <h2>The Spec Object</h2>
 <p>The following attributes are supported for the spec object being executed by ohmit.</p>
 <pre><code class="language-js">
@@ -273,6 +272,25 @@ var result = {
         , item2: [item2Resource]
     }
 }
+</code></pre>
+<h2>Writing your hypermedia adapter</h2>
+<p><code>ohmit</code> expects a <code>resourceFactory</code> that conforms to this interface:</p>
+<pre><code class="language-js">{
+    // @return a Promise that resolves to a single resourceAdapter at `self` URI
+    createResource: function({self}) { /** returns a resource instance **/ }
+}
+
+</code></pre>
+<p><code>ohmit</code> interacts with a resource adapter for traversal through its
+related links. The resource adapter interface must meet this contract:</p>
+<pre><code class="language-js">{
+    self          : function() { /** return a url string identifying the location of the resource **/ }
+    , get         : function({params}) { /** return a Promise resolving an resource adapter. should be hydrated ** / }
+    , hasRelation : function(rel) { /** return a Boolean answering if this resource is related by `rel` **/ }
+    , follow      : function() { /** return a Promise resolving an Array of resource adapters which are related by `rel`. Should not perform GET operations ** / }
+    , resource    : function() { /** return a Promise or the underlying resource the resource adapter is wrapping; could lazily load the resource (eg Proxy) **/ }
+}
+
 </code></pre>
 <h3>Running tests</h3>
 <p><strong>NodeJS</strong>

@@ -166,13 +166,21 @@ Object.assign(this, {
         return optimized
     }
     ,rootNode() {
-        let value = this.spec[ROOT_KEY], resource = (value._resource ? value._resource : false);
+        let value = this.spec[ROOT_KEY]
+        let resource = (value._resource ? value._resource : false);
 
         //passed in resource as root
         if(value.self &amp;&amp; value.get) {
             resource = value
         }
-        const url  = resource ? resource.self : ((isString(value) ?  value : value._url));
+        let url = resource.self
+        if(url &amp;&amp; toString.call(url) == '[object Function]') {
+            url = resource.self()
+        } else if(isString(value)) {
+            url = value
+        } else {
+            url = value._url
+        }
         const parsed = parseUrl(url);
         const node = {
             url: url
@@ -214,27 +222,11 @@ Object.assign(this, {
             function isResource(obj) {
                 return (obj.self &amp;&amp; obj.get &amp;&amp; obj.follow)
             }
-
-            function parseRequest(request) {
-                if(isResource(request)) {
-                    return request
+            function toArray(arg) {
+                if(Array.isArray(arg)) {
+                    return arg
                 }
-                const response = request.response;
-                const body = response &amp;&amp; response.body, allow = response &amp;&amp; response.headers &amp;&amp; response.headers.allow;
-
-                return resourceFactory.parse({
-                        self: body._links.self.href
-                        ,body: body
-                        ,allow: allow
-                    })
-            }
-            function parse(requests) {
-                requests = [].concat(requests)
-                return requests.map(parseRequest.bind(this))
-            }
-
-            function flatten(results) {
-                return [].concat.apply([],results)
+                return [arg]
             }</code></pre>
           <section id="executeRel">
             <h1>executeRel</h1>
@@ -243,12 +235,12 @@ Object.assign(this, {
               <div class="label label-info radius ctx-type">function</div><span>&nbsp;</span><span>executeRel()</span><span>&nbsp;</span>
             </p>
           </section>
-          <div class="description"><p>follows the relationship and parses the responses<br />to proper halibuts</p></div>
+          <div class="description"><p>follows the relationship and parses the responses<br />to proper resources</p></div>
           <pre><code class="language-javascript">function executeRel(rel, rels, responseCache, res) {
     return res.follow(rel.rel)
         .bind(this)
-        .then(parse)
         .then(resources =&gt; {
+            //do not perform a GET for this rel (`_link` was passed)
             if(!!rel.link) {
                 return resources
             }
@@ -256,7 +248,7 @@ Object.assign(this, {
                 return it.get({ params: rel.params })
             }.bind(this))
         })
-        .then(parse)
+        .then(toArray)
 }</code></pre>
           <section id="executeRels">
             <h1>executeRels</h1>
@@ -267,14 +259,14 @@ Object.assign(this, {
           </section>
           <div class="description"><p>walk the rels from <code>index</code> and update cache with results</p></div>
           <pre><code class="language-javascript">function executeRels(rels, index, responseCache, res) {
-    res = parse(res)
     if(!rels.length || index &gt;= rels.length) {
         return responseCache
     }
-
-    res = res[0]
+    if(Array.isArray(res)) {
+        res = res[0]
+    }
     const rel = rels.slice(index, index + 1)[0];
-    if(!res.links(rel.rel).length) {
+    if(!res.hasRelation(rel.rel)) {
         //cache empty links collection
         //eg `_links: { myRel: [] }`
         let arr;
@@ -292,7 +284,6 @@ Object.assign(this, {
                     return executeRels.call(this, rels, index + 1, responseCache, resource)
                 })
             })
-
 }</code></pre>
           <section id="startAt">
             <h1>startAt</h1>
@@ -337,6 +328,7 @@ Object.assign(this, {
         const paths = this.indexed.optimized(), responseCache = {};
         return this.discoverRoot(this.indexed.rootNode(), this.opts)
             .tap(root =&gt; {
+                //root is an Array of { resource, response }
                 responseCache['/'] = root
             })
             .then(makeRequests.bind(this, paths, responseCache, this.indexed, 0))
@@ -345,17 +337,16 @@ Object.assign(this, {
         if(rootNode.resource) {
             //an actual instance was passed in as root node
             //so just use that
-            return Promise.resolve(parse(rootNode.resource))
+            return Promise.resolve([rootNode.resource])
         }
-        return resourceFactory.init({
+        return resourceFactory.createResource({
             self: rootNode.url
-            , discoverable: false
         })
         .then(res =&gt; {
             const params = (rootNode.params || {});
             return res.get({ params: params})
         })
-        .then(parse)
+        .then(toArray)
     }
 })
         })
