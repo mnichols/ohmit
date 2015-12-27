@@ -23,9 +23,9 @@ test('should namespace memento roots',(assert) => {
     })
     let q = chainedSpec()
     return sut.execute(q)
-    .then(({mementos})=> {
-        assert.equal(mementos.f[0]._root[0].self(),'/apiChain/f/1')
-        assert.equal(mementos.f[1]._root[0].self(),'/apiChain/f/2')
+    .then(({results})=> {
+        assert.equal(results.f[0]._root[0].self(),'/apiChain/f/1')
+        assert.equal(results.f[1]._root[0].self(),'/apiChain/f/2')
     })
 })
 test('should attach chained spec appropriately',(assert) => {
@@ -35,15 +35,15 @@ test('should attach chained spec appropriately',(assert) => {
     })
     let q = chainedSpec()
     return sut.execute(q)
-    .then(({mementos})=> {
-        assert.equal(mementos.f[0].f1[0].self(),'/apiChain/f1/1')
-        assert.equal(mementos.f[0].f1[1].self(),'/apiChain/f1/2')
-        assert.equal(mementos.f[0].f2[0].self(),'/apiChain/f2/1')
-        assert.equal(mementos.f[0].f2[1].self(),'/apiChain/f2/2')
+    .then(({results})=> {
+        assert.equal(results.f[0].f1[0].self(),'/apiChain/f1/1')
+        assert.equal(results.f[0].f1[1].self(),'/apiChain/f1/2')
+        assert.equal(results.f[0].f2[0].self(),'/apiChain/f2/1')
+        assert.equal(results.f[0].f2[1].self(),'/apiChain/f2/2')
 
-        assert.equal(mementos.f[1].f1[0].self(),'/apiChain/f1/3')
-        assert.equal(mementos.f[1].f1[1].self(),'/apiChain/f1/4')
-        assert.equal(mementos.f[1].f2[0].self(),'/apiChain/f2/3')
+        assert.equal(results.f[1].f1[0].self(),'/apiChain/f1/3')
+        assert.equal(results.f[1].f1[1].self(),'/apiChain/f1/4')
+        assert.equal(results.f[1].f2[0].self(),'/apiChain/f2/3')
     })
 
 })
@@ -54,8 +54,8 @@ test('should have empty arrays for empty rels',(assert) => {
     })
     let q = chainedSpec()
     return sut.execute(q)
-    .then(({mementos})=> {
-        assert.equal(mementos.f[0].f3.length,0)
-        assert.equal(mementos.f[1].f3.length,0)
+    .then(({results})=> {
+        assert.equal(results.f[0].f3.length,0)
+        assert.equal(results.f[1].f3.length,0)
     })
 })

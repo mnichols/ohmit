@@ -81,7 +81,7 @@ let index = stampit()
 
             //eg special '/' path
             //if provided then the root will appear alongside
-            //other mementos as {key}
+            //other results as {key}
             if(len === 0) {
                 mapPath2Key(fullpath, key)
                 map[fullpath] = {
@@ -314,9 +314,7 @@ function requests(cfg) {
                         //so just use that
                         return Promise.resolve([rootNode.resource])
                     }
-                    return resourceFactory.createResource({
-                        self: rootNode.url
-                    })
+                    return Promise.resolve(resourceFactory.createResource({ self: rootNode.url }))
                     .then(res => {
                         const params = (rootNode.params || {});
                         return res.get({ params: params})
@@ -334,7 +332,7 @@ function ohmit(cfg) {
     return stampit()
         .init(function() {
             function mapRequestsToKeys(index, target, requests) {
-                //hydrate the `mementos` collection
+                //hydrate the `results` collection
                 //with the results of requests
                 Object.keys(requests)
                     .reduce((map, path) => {
@@ -371,7 +369,7 @@ function ohmit(cfg) {
                     return this.execute(spec)
                         .tap(res => {
                             //assign our new response to the original memento position at `key`
-                            arr[index] = res.mementos
+                            arr[index] = res.results
                         })
                         .return(arr)
             }
@@ -396,13 +394,13 @@ function ohmit(cfg) {
                         //the original spec
                         spec: spec
                         //the results of the requests
-                        , mementos: {}
+                        , results: {}
                     };
 
 
                     return _requests.execute()
                         .bind(this)
-                        .tap(mapRequestsToKeys.bind(this, _index, response.mementos))
+                        .tap(mapRequestsToKeys.bind(this, _index, response.results))
                         .tap(requests => {
                             const mappable = (spec._map || {});
                             return Promise.resolve(Object.keys(mappable))
@@ -416,7 +414,7 @@ function ohmit(cfg) {
                                         .bind(this)
                                         .reduce(chainResponse.bind(this,key,mappable), map[key])
                                         .return(map)
-                                },response.mementos)
+                                },response.results)
                         })
                         .return(response)
                 }

@@ -7,7 +7,7 @@
 
 Execute a plan to traverse an api and output an arbitrary object called a 'memento'. 
 She does this with `GET` http methods and returns an object. 
-The spec defined by your _execution plan_ is found at the `mementos` attribute on the resulting object.
+The spec defined by your _execution plan_ is found at the `results` attribute on the resulting object.
 She will support `params` at each level of traversal.
 
 ## What ohmit Will Not Do For You
@@ -76,7 +76,7 @@ where each node can either be a `string` representing the relationship (link) or
 - `_path` _required_ {String} The relationship (`rel`) to follow from the root. You can travel as deep as you like.
 - `_params` _optional_ {Object} Map of relationship:parameter object to pass into the GET request for that relationship
 - `_link` _optional_ {Boolean} Default : **false** Specifies the final relationship should not receive a GET request
-    , but instead provide the uninitialized resources as their 'mementos'.
+    , but instead provide the uninitialized resources as their 'results'.
 
 
 ## Examples
@@ -98,7 +98,7 @@ var a = {
     }
     , name: 'a'
 }
-
+#
 ```
 
 Given the following query plan execution:
@@ -117,7 +117,7 @@ var result = ohmit.execute(q)
 {
     spec: /* your spec object */
     //here is the results
-    , mementos: {
+    , results: {
         a: [{
             _links: {
                 self: { href: 'http://example.com/a'}
@@ -133,7 +133,7 @@ var result = ohmit.execute(q)
 `ohmit` will traverse the api starting at `http://example.com/api/` and
 follow the `_link` relationship of 'a' (`http://example.com/a`).
 
-The result will be found at `mementos` attribute keyed identical to the spec object:
+The result will be found at `results` attribute keyed identical to the spec object:
 
 ## Super Duper complex path
 
@@ -239,7 +239,7 @@ var q = {
 //expects
 var result = {
     spec: /* yore spec object */
-    , mementos: {
+    , results: {
         c: [cResource]
         , item1: [item1Resource]
         , item2: [item2Resource]
