@@ -44,7 +44,7 @@
 <h2>What ohmit Will Do For You</h2>
 <p>Execute a plan to traverse an api and output an arbitrary object called a 'memento'.
 She does this with <code>GET</code> http methods and returns an object.
-The spec defined by your <em>execution plan</em> is found at the <code>mementos</code> attribute on the resulting object.
+The spec defined by your <em>execution plan</em> is found at the <code>results</code> attribute on the resulting object.
 She will support <code>params</code> at each level of traversal.</p>
 <h2>What ohmit Will Not Do For You</h2>
 <ul>
@@ -116,7 +116,7 @@ where each node can either be a <code>string</code> representing the relationshi
 </li>
 <li>
 <p><code>_link</code> <em>optional</em> {Boolean} Default : <strong>false</strong> Specifies the final relationship should not receive a GET request
-, but instead provide the uninitialized resources as their 'mementos'.</p>
+, but instead provide the uninitialized resources as their 'results'.</p>
 </li>
 </ul>
 <h2>Examples</h2>
@@ -135,7 +135,7 @@ var a = {
     }
     , name: 'a'
 }
-
+#
 </code></pre>
 <p>Given the following query plan execution:</p>
 <pre><code class="language-js">var q = {
@@ -151,7 +151,7 @@ var result = ohmit.execute(q)
 {
     spec: /* your spec object */
     //here is the results
-    , mementos: {
+    , results: {
         a: [{
             _links: {
                 self: { href: 'http://example.com/a'}
@@ -165,7 +165,7 @@ var result = ohmit.execute(q)
 </code></pre>
 <p><code>ohmit</code> will traverse the api starting at <code>http://example.com/api/</code> and
 follow the <code>_link</code> relationship of 'a' (<code>http://example.com/a</code>).</p>
-<p>The result will be found at <code>mementos</code> attribute keyed identical to the spec object:</p>
+<p>The result will be found at <code>results</code> attribute keyed identical to the spec object:</p>
 <h2>Super Duper complex path</h2>
 <pre><code class="language-js">
 var api = {
@@ -266,7 +266,7 @@ var q = {
 //expects
 var result = {
     spec: /* yore spec object */
-    , mementos: {
+    , results: {
         c: [cResource]
         , item1: [item1Resource]
         , item2: [item2Resource]
