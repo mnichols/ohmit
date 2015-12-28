@@ -1,6 +1,6 @@
 {
   "name": "ohmit",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Object-Hypermedia Mapper",
   "main": "./dist/ohmit.js",
   "scripts": {
@@ -57,6 +57,8 @@
     "whatwg-fetch": "^0.10.1"
   },
   "jspm": {
+    "jspmNodeConversion": false,
+    "format": "es6",
     "dependencies": {
       "blue-tape": "npm:blue-tape@^0.1.11",
       "bluebird": "npm:bluebird@^3.1.1",
