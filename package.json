@@ -1,6 +1,6 @@
 {
   "name": "ohmit",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Object-Hypermedia Mapper",
   "main": "./dist/ohmit.js",
   "scripts": {
@@ -58,7 +58,7 @@
   },
   "jspm": {
     "jspmNodeConversion": false,
-    "format": "es6",
+    "format": "cjs",
     "dependencies": {
       "blue-tape": "npm:blue-tape@^0.1.11",
       "bluebird": "npm:bluebird@^3.1.1",
