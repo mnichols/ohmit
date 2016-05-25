@@ -2,6 +2,15 @@
 
 ## The **O**bject-**H**ypermedia **M**apper (OHM)
 
+## Install
+
+`npm install ohmit`
+
+## Size (gzipped)
+
+- **unminified** 3.75kb
+- **minified** 1.80kb
+
 
 ## What ohmit Will Do For You
 
