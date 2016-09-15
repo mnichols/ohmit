@@ -3,6 +3,7 @@
 import stampit from 'stampit'
 import Promise from 'bluebird'
 import clone from 'clone'
+import isString from 'lodash.isstring'
 import {parse as parseUrl} from 'url'
 
 export default ohmit
@@ -23,9 +24,6 @@ let index = stampit()
         const keys = Object.keys(this.spec), path2Keys = {};
             ;
 
-        function isString(obj) {
-            return toString.call(obj) == '[object String]'
-        }
         function split(path) {
             return path.split('/')
                 .filter(p => {
