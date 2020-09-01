@@ -52,7 +52,7 @@
     "jspm": "^0.16.19",
     "mr-doc": "^3.0.7",
     "rimraf": "^2.4.3",
-    "serve": "^1.4.0",
+    "serve": "^11.3.2",
     "url-template": "^2.0.6",
     "whatwg-fetch": "^0.10.1"
   },
